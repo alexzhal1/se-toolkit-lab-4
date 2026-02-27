@@ -24,3 +24,58 @@ def test_filter_returns_interaction_with_matching_ids() -> None:
     result = _filter_by_item_id(interactions, 1)
     assert len(result) == 1
     assert result[0].id == 1
+
+
+def test_filter_returns_all_interactions_with_matching_item_id() -> None:
+    """Edge case: Multiple interactions share the same item_id."""
+    interactions = [
+        _make_log(1, 1, 5),
+        _make_log(2, 2, 5),
+        _make_log(3, 3, 5),
+        _make_log(4, 4, 10),
+    ]
+    result = _filter_by_item_id(interactions, 5)
+    assert len(result) == 3
+    assert all(log.item_id == 5 for log in result)
+    assert [log.id for log in result] == [1, 2, 3]
+
+
+def test_filter_with_zero_item_id() -> None:
+    """Boundary value: Filter with item_id = 0."""
+    interactions = [_make_log(1, 1, 0), _make_log(2, 2, 1), _make_log(3, 3, 0)]
+    result = _filter_by_item_id(interactions, 0)
+    assert len(result) == 2
+    assert all(log.item_id == 0 for log in result)
+    assert [log.id for log in result] == [1, 3]
+
+
+def test_filter_with_negative_item_id() -> None:
+    """Boundary value: Filter with negative item_id."""
+    interactions = [_make_log(1, 1, -1), _make_log(2, 2, 1), _make_log(3, 3, -1)]
+    result = _filter_by_item_id(interactions, -1)
+    assert len(result) == 2
+    assert all(log.item_id == -1 for log in result)
+
+
+def test_filter_preserves_original_order() -> None:
+    """Edge case: Filtered results should maintain original list order."""
+    interactions = [
+        _make_log(10, 1, 5),
+        _make_log(20, 2, 3),
+        _make_log(30, 3, 5),
+        _make_log(40, 4, 3),
+        _make_log(50, 5, 5),
+    ]
+    result = _filter_by_item_id(interactions, 5)
+    assert len(result) == 3
+    assert [log.id for log in result] == [10, 30, 50]
+    # Verify order is preserved, not re-sorted
+    assert result[0].id < result[1].id < result[2].id
+
+
+def test_filter_with_nonexistent_item_id_returns_empty() -> None:
+    """Edge case: Filtering for item_id with no matches returns empty list."""
+    interactions = [_make_log(1, 1, 1), _make_log(2, 2, 2), _make_log(3, 3, 3)]
+    result = _filter_by_item_id(interactions, 999)
+    assert result == []
+    assert isinstance(result, list)
